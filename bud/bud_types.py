@@ -11,13 +11,22 @@ class statusType(Enum):
 @dataclass
 class Task:
     name: str
-    hash_id: str
+    id: str
     description: str
     duration: str
     depends_on: str
     status: str
     start_date: str
 
+@dataclass 
+class Goal:
+    name: str
+    id: str
+    description: str
+    duration: str
+    status: str
+    start_date: str
+    tasks: list[Task]
 
 
 #@dataclass
