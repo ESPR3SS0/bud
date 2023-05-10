@@ -7,6 +7,10 @@ class statusType(Enum):
    DEV      = 2
    DONE     = 3
 
+# hatchling
+# growing
+# done
+
 
 @dataclass
 class Task:
@@ -14,7 +18,6 @@ class Task:
     id: str
     description: str
     duration: str
-    depends_on: str
     status: str
     start_date: str
 

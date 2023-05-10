@@ -9,6 +9,8 @@ from rich.table import Table
 
 PROJECT_CONFIG_DIR = Path(".bud")
 PROJECT_CONFIG_FILE = Path(".bud/bud.toml")
+TASK_DIR = Path(".bud/tasks")
+TASK_FILE = Path(".bud/tasks/task.json")
 GOAL_DIR = Path(".bud/goals")  
 GOAL_FILE =Path(".bud/goals/goal.json")
 GROUP_FILE = Path(".bud/tasks/groups.json")
@@ -34,11 +36,12 @@ def add()-> None:
     id = str(abs(hash(name))) # @TODO Am I happy with ID generation?
 
     # Load the current tasks
-    with open(GOAL_FILE, 'r') as f:
+    with open(TASK_FILE, 'r') as f:
         tasks = json.load(f)
 
     # Need all the task names
     all_task_names = [x for x,_ in tasks.items()]
+    print(all_task_names)
     
 
     # Save a list of add tasks
@@ -59,7 +62,7 @@ def add()-> None:
             print(f"Task doesn't exist: {task_name}")
             continue
 
-        goal_tasks.append(task_name)
+        goal_tasks.append(tasks[task_name])
 
     new_goal= Goal(
         name = name,
@@ -114,7 +117,7 @@ def show():
                 goal_obj.name,
                 goal_obj.id,
                 goal_obj.description,
-                "\n".join([x.name for x in goal_obj.tasks])
+                "\n".join([Task(**x).name for x in goal_obj.tasks])
                 )
 
     left_print(table1)

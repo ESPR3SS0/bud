@@ -7,12 +7,30 @@ from rich.align import Align
 
 console = Console()
 
-def left_print(text, style: Union[str, None] = None, wrap: bool = False) -> None:
-    """Print text with center alignment.
+def center_print(text, style: Union[str, None] = None, wrap: bool = False) -> None:
+    """print text with center Alignment.
 
-    Args:
-        text (Union[str, Rule, Table]): object to center align
-        style (str, optional): styling of the object. Defaults to None.
+    args:
+        text (Union[str, rule, table]): object to center Align
+        style (str, optional): styling of the object. defaults to None.
+    """
+    if wrap:
+        width = shutil.get_terminal_size().columns // 2
+    else:
+        width = shutil.get_terminal_size().columns
+
+    #console.print(Align.center(text, style=style, width=width))
+    console.print(Align.center(text, style=style, width=width))
+
+
+
+
+def left_print(text, style: Union[str, None] = None, wrap: bool = False) -> None:
+    """print text with center Alignment.
+
+    args:
+        text (Union[str, rule, table]): object to center Align
+        style (str, optional): styling of the object. defaults to None.
     """
     if wrap:
         width = shutil.get_terminal_size().columns // 2
