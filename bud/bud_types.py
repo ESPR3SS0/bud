@@ -2,14 +2,23 @@ from dataclasses import dataclass
 from enum import Enum
 
 
-class statusType(Enum):
-   IDLE     = 1
-   DEV      = 2
-   DONE     = 3
+class Status(Enum):
+   IDLE     = 'IDLE'
+   DEV      = 'DEV'
+   DONE     = 'DONE'
 
 # hatchling
 # growing
 # done
+
+
+class Priority(Enum):
+    HIGHEST     = "HIGHEST"
+    HIGH        = "HIGH"
+    MODERATE    = "MODERATE"
+    LOW         = "LOW"
+    LOWEST      = "LOWEST"
+
 
 
 @dataclass
@@ -19,6 +28,7 @@ class Task:
     description: str
     duration: str
     status: str
+    priority: str
     start_date: str
 
 @dataclass 
@@ -29,6 +39,7 @@ class Goal:
     duration: str
     status: str
     start_date: str
+    priority: str
     tasks: list[Task]
 
 
