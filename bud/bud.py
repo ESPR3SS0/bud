@@ -6,7 +6,9 @@ from typing import Union, List
 
 import sys, os
 from subprocess import call
+import subprocess
 
+import zoneinfo
 from rich.align import Align
 from rich.console import Console
 from rich.table import Table
@@ -26,6 +28,8 @@ import tomllib
 
 import datetime
 
+import polars as pl
+
 # Need this to write to toml
 import toml 
 
@@ -42,6 +46,8 @@ TASK_LOG_FILE = Path(".bud/tasks/task_log.json")
 GOAL_DIR = Path(".bud/goals")  
 GOAL_FILE =Path(".bud/goals/goal.json")
 
+TIME_FILE = Path(".bud/time.csv")
+
 COLOR_INFO = "cyan1 on purple3"
 COLOR_SUCCESS = "black on green"
 COLOR_WARNING = "bright_red on bright_white"
@@ -55,14 +61,12 @@ else:
 
 
 def get_task_dependencies() -> None:
-    '''Prompt the user for dependencies'''
+    """Prompt the user for dependencies"""
     return
 
 
-def getconfig():
-    '''
-        Function to read the local config file
-    '''
+def get_config():
+    """Function to read the local config file"""
 
     with open(PROJECT_CONFIG_FILE, 'rb') as f:
         data = tomllib.load(f)
@@ -75,9 +79,14 @@ def getconfig():
 def getquotes() -> dict:
     """Select a random quote.
 
-    Returns:
-        dict: quote with its metadata
+
+    Returns
+    -------
+    dict
+
     """
+
+
 
     with open(config["quotes_file"], "r") as qf:
         quotes_file = json.load(qf)
@@ -86,9 +95,18 @@ def getquotes() -> dict:
 
 @app.callback(invoke_without_command=True)
 def nocommand(context: typer.Context)->None:
-    '''
-        Run the show command by default
-    '''
+    """Run the show command by default
+
+    Parameters
+    ----------
+    context: typer.Context :
+        
+
+    Returns
+    -------
+    None
+
+    """
 
     # If a command was passed leave this function
     if context.invoked_subcommand is not None:
@@ -99,7 +117,7 @@ def nocommand(context: typer.Context)->None:
     # This is a line from please that prints a quote
     # quote = getquotes()
     #center_print(f'[#63D2FF]"{quote["content"]}"[/]', wrap=True)
-    config = getconfig()
+    config = get_config()
     user_name = config['proj_info']['username']
 
     # This is a line from pleadse that prints hello and the time
@@ -119,7 +137,37 @@ def add(ctx: typer.Context,
         priority: Annotated[str,typer.Option("-p", "--priority" )] = None,
         provide_description: Annotated[bool, typer.Option("-d", "--description")] = None,
         )-> None:
-    '''By deafult the only required field is going to be the name'''
+    """By deafult the only required field is going to be the name
+
+    Parameters
+    ----------
+    ctx: typer.Context
+        
+    name: str
+        
+    duration: str :
+        
+    typer.Option("-u" :
+        
+    "--duration")] :
+         (Default value = None)
+    priority: Annotated[str :
+        
+    typer.Option("-p" :
+        
+    "--priority" )] :
+         (Default value = None)
+    provide_description: Annotated[bool :
+        
+    typer.Option("-d" :
+        
+    "--description")] :
+         (Default value = None)
+
+    Returns
+    -------
+
+    """
 
     #description: Annotated[List[str], typer.Option("-d", "--description", prompt=True)]
 
@@ -174,6 +222,17 @@ def add(ctx: typer.Context,
 
 @app.command(short_help="Do a task [id, partial id, name]")
 def do(task: str) -> None:
+    """
+
+    Parameters
+    ----------
+    task: str :
+        
+
+    Returns
+    -------
+
+    """
 
     # Accept either id, partial  id, or name 
 
@@ -199,9 +258,17 @@ def do(task: str) -> None:
 
 @app.command(short_help="Earse a task")
 def remove(task: str):
-    '''
-        Completely remove a task
-    '''
+    """Completely remove a task
+
+    Parameters
+    ----------
+    task: str :
+        
+
+    Returns
+    -------
+
+    """
     with open(TASK_FILE,'r') as taskin:
         task_dict = json.load(taskin)
 
@@ -221,6 +288,19 @@ def remove(task: str):
 
 @app.command(short_help="Scratch")
 def scratch(pad_name:Annotated[str, typer.Option()])-> None:
+    """
+
+    Parameters
+    ----------
+    pad_name:Annotated[str :
+        
+    typer.Option()] :
+        
+
+    Returns
+    -------
+
+    """
 
     
 
@@ -231,6 +311,21 @@ def scratch(pad_name:Annotated[str, typer.Option()])-> None:
 
 @app.command(short_help="List goals and tasks")
 def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> None:
+    """
+
+    Parameters
+    ----------
+    verbose: Annotated[bool :
+        
+    typer.Option("--verbose" :
+        
+    "-v")] :
+         (Default value = False)
+
+    Returns
+    -------
+
+    """
 
 
     # For now Im going to make a table with the following format
@@ -240,7 +335,7 @@ def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> No
     with open(TASK_FILE, 'r') as f:
         tasks = json.load(f)
 
-    config = getconfig()
+    config = get_config()
     proj_name = config["proj_info"]["name"]
 
     table1 = Table(
@@ -308,12 +403,18 @@ def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> No
 
 @app.command(short_help="Log the saved tasks and remove from show table")
 def log():
-    '''
-        log 
-
-        Any tasks that are marked as done will be saved to a log file 
+    """log
+    
+        Any tasks that are marked as done will be saved to a log file
         and no longer appear in the task table
-    '''
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
 
     # Open the task file 
     with open(TASK_FILE,'r+') as taskf:
@@ -348,10 +449,130 @@ def log():
     return
 
 
+@app.command(short_help="Log time")
+def clock(
+        action: Annotated[str,typer.Argument(
+            help="Display if currently clocked in or out")] = None,
+        reset: Annotated[bool,typer.Option("-r", "--reset", 
+            help='Clear the most recent clock in and reset')] = False,
+        status: Annotated[bool,typer.Option("-s", "--status", 
+            help="Display if currently clocked in or out")] = False,
+        list: Annotated[bool,typer.Option( 
+            help="List the past 5 clocks")] = False,
+    ):
+    """Toggle a time clock
+
+    Parameters
+    ----------
+    reset: Annotated[bool :
+        
+    typer.Option("-r" :
+        
+    "--reset" :
+        
+    help :
+         (Default value = 'Clear the most recent clock in and reset')] = False)
+
+    Returns
+    -------
+
+    """
+
+
+
+    if action not in ["in", "out", None] :
+        return
+
+
+    # Schema was not working well when trying to read a csv
+    #schema = {
+    #    "date" : pl.Date,
+    #    "time" : pl.Time,
+    #    "datetime" : pl.Datetime,
+    #    "clock_in" : bool,
+    #    "clock_out" : bool
+    #}
+
+    # If the file doesn't exist create it 
+    if not TIME_FILE.exists():
+
+        time_df = pl.DataFrame({})#, schema=schema)
+    else:
+        time_df = pl.read_csv(TIME_FILE)
+
+    if reset:
+        print("In reset")
+        # Pop the most 
+
+        time_df = time_df.with_columns(pl.col('datetime').str.to_datetime("%Y-%m-%d %H:%M:%S%.f").alias("pdatetime"))
+        # Sort the DataFrame by the 'Date' column in descending order
+        time_df = time_df.sort('pdatetime', descending=True)
+        most_recent_time = time_df['pdatetime'][0]
+        print(f"Most recent time was: {most_recent_time}")
+
+        # Confirm with the user they want to remove the last clock
+        conf = input("Confirm remove(y/Y")
+        if conf in ['y', 'Y']:
+            time_df = time_df.filter(pl.col('pdatetime') != most_recent_time)
+
+
+    if action is not None:
+
+
+        # Get the row with the most recent time
+        time_df = time_df.with_columns(pl.col('datetime').str.to_datetime("%Y-%m-%d %H:%M:%S%.f").alias("pdatetime"))
+        # Sort the DataFrame by the 'Date' column in descending order
+        latest_action = time_df.sort('pdatetime', descending=True)
+        was_clock_in = latest_action['clock_in'][0]
+
+        if action == "in" and was_clock_in:
+            print("Do not double clock")
+            return
+        elif action == "out" and not was_clock_in:
+            print("Do not double clock")
+            return
+
+        time_df = time_df.drop("pdatetime")
+        
+
+
+        # Get the current time
+        current_time = datetime.datetime.utcnow()
+
+
+        # Get the times
+        data = {
+            "date" : str(current_time.date()),
+            "time" : str(current_time.time()),
+            "datetime" : str(current_time),
+
+                                    #pl.Datetime('us', 
+                                    # zoneinfo.ZoneInfo("UTC"),
+                                     #current_time),
+            "clock_in" : True if action=="in" else False,
+            "clock_out" : True if action=="out" else False,
+        }
+
+        # Create the new dataframe
+        df2 = pl.DataFrame(data) #, schema=schema)
+
+        time_df = pl.concat([time_df, df2])
+
+
+    if list:
+        print("Previous 5 entries...")
+        print(time_df.tail(5))
+
+    # Write the to the time file
+    time_df.write_csv(TIME_FILE)
+    return
+
+
+
 
 @app.command(short_help="Init new project")
 def setup():
-    '''Init a new project'''
+    """Init a new project"""
 
     typer.style("Creating new projet!", fg=typer.colors.CYAN)
 
@@ -382,7 +603,36 @@ def setup():
     left_print(f"Project {proj_name} made")
     return
 
+
+@app.command()
+def note(note_path=None)->None:
+    '''
+    Add to the obsidian notes
+    '''
+
+    # Get the config 
+    config = get_config()
+    proj_name = config['proj_info']['name']
+
+    if note_path is None:
+        #print(f"Proj name is {proj_name}")
+        note_base = Path(f'/mnt/d/obsidian/MASTER/bud/{proj_name}')
+
+        if not note_base.exists():
+            note_base.mkdir()
+
+        note_path = note_base.joinpath('note.md')
+        note_path.touch()
+
+
+    # Invoke the default editor with the path
+    subprocess.run([EDITOR, note_path], check=True)
+    print(f"Ran on file {note_path}")
+
+    return
+
 def main() -> None:
+    """ """
     project_files = [PROJECT_CONFIG_DIR, 
                      PROJECT_CONFIG_FILE,
                      TASK_DIR,

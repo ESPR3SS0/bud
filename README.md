@@ -7,9 +7,11 @@
 
 <h1 align="center"> Bud - A buddy to help you with projects</h1>
 
-<h4 align="center"> This is a very early project I making to help me out with project organization and goal making. I am very quick to think of awesome cool project ideas, but also very quick to abondon said awesome things for a new project. This tool helps me make goals and hit them. </h4>
+<h4 align="center"> This is a very early project I making to help me out with project organization and goal making. This tool will help me make goals and hit them. </h4>
 
 - Planned additions:
+    - [x] Time tracking by clocking in and out 
+        - [ ] Format time list 
     - [ ] Optional indepth description per task
     - [ ] Command to Move multiple tasks at once
     - [ ] Optional Target Date 
