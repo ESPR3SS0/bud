@@ -86,8 +86,6 @@ def getquotes() -> dict:
 
     """
 
-
-
     with open(config["quotes_file"], "r") as qf:
         quotes_file = json.load(qf)
     return quotes_file[random.randrange(0, len(quotes_file))]
@@ -137,37 +135,6 @@ def add(ctx: typer.Context,
         priority: Annotated[str,typer.Option("-p", "--priority" )] = None,
         provide_description: Annotated[bool, typer.Option("-d", "--description")] = None,
         )-> None:
-    """By deafult the only required field is going to be the name
-
-    Parameters
-    ----------
-    ctx: typer.Context
-        
-    name: str
-        
-    duration: str :
-        
-    typer.Option("-u" :
-        
-    "--duration")] :
-         (Default value = None)
-    priority: Annotated[str :
-        
-    typer.Option("-p" :
-        
-    "--priority" )] :
-         (Default value = None)
-    provide_description: Annotated[bool :
-        
-    typer.Option("-d" :
-        
-    "--description")] :
-         (Default value = None)
-
-    Returns
-    -------
-
-    """
 
     #description: Annotated[List[str], typer.Option("-d", "--description", prompt=True)]
 
@@ -289,19 +256,7 @@ def remove(task: str):
 @app.command(short_help="Scratch")
 def scratch(pad_name:Annotated[str, typer.Option()])-> None:
     """
-
-    Parameters
-    ----------
-    pad_name:Annotated[str :
-        
-    typer.Option()] :
-        
-
-    Returns
-    -------
-
     """
-
     
 
     return
@@ -312,19 +267,6 @@ def scratch(pad_name:Annotated[str, typer.Option()])-> None:
 @app.command(short_help="List goals and tasks")
 def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> None:
     """
-
-    Parameters
-    ----------
-    verbose: Annotated[bool :
-        
-    typer.Option("--verbose" :
-        
-    "-v")] :
-         (Default value = False)
-
-    Returns
-    -------
-
     """
 
 
@@ -402,17 +344,11 @@ def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> No
 
 
 @app.command(short_help="Log the saved tasks and remove from show table")
-def log():
+def archive():
     """log
     
         Any tasks that are marked as done will be saved to a log file
         and no longer appear in the task table
-
-    Parameters
-    ----------
-
-    Returns
-    -------
 
     """
 
@@ -461,20 +397,6 @@ def clock(
             help="List the past 5 clocks")] = False,
     ):
     """Toggle a time clock
-
-    Parameters
-    ----------
-    reset: Annotated[bool :
-        
-    typer.Option("-r" :
-        
-    "--reset" :
-        
-    help :
-         (Default value = 'Clear the most recent clock in and reset')] = False)
-
-    Returns
-    -------
 
     """
 
