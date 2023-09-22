@@ -20,6 +20,10 @@ class Priority(Enum):
     LOWEST      = "LOWEST"
 
 
+@dataclass 
+class Project:
+    name: str
+
 
 @dataclass
 class Task:

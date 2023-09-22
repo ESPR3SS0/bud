@@ -18,6 +18,8 @@ import typer
 from bud.bud_helpers import prompt_user, left_print, center_print
 from bud.bud_types import Task, Goal, Status, Priority
 
+#TODO:
+
 from bud import task
 from bud import goal 
 
@@ -90,6 +92,27 @@ def getquotes() -> dict:
         quotes_file = json.load(qf)
     return quotes_file[random.randrange(0, len(quotes_file))]
 
+@app.command()
+def todos():
+    '''
+    Display the todos in the current file
+    '''
+    # This truly is going to be a slower version of rg "TODO" but maybe 
+    # I can add my own features later 
+
+    for file in Path(".").rglob("*"):
+        if file.is_dir():
+            continue
+        try:
+            with open(file,'r') as f:
+                todo_lines = [x for x in f.readlines() if "todo" in x.lower()]
+                for line in todo_lines:
+                    print(line)
+        except UnicodeDecodeError as e:
+            continue
+    print(f"{len(list(Path('.').rglob('*')))}")
+
+    return
 
 @app.callback(invoke_without_command=True)
 def nocommand(context: typer.Context)->None:
@@ -400,9 +423,8 @@ def clock(
 
     """
 
-
-
     if action not in ["in", "out", None] :
+        print("Clock 'in' or clock 'out'")
         return
 
 
