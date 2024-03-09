@@ -1,5 +1,5 @@
 import typer 
-from bud.bud_types import Task, Goal
+from bud.bud_types import Task, UmbrellaTask
 from bud.bud_helpers import left_print, prompt_user
 from dataclasses import asdict
 import json
@@ -27,8 +27,8 @@ app = typer.Typer()
 def add()-> None:
     '''create a goal'''
 
-    name = prompt_user("Goal Name?")
-    desc = prompt_user("Goal Description?")
+    name = prompt_user("UmbrellaTask Name?")
+    desc = prompt_user("UmbrellaTask Description?")
     duration = prompt_user("Duration?")
     deps = prompt_user("Depends on:")
     status = "idea"
@@ -64,7 +64,7 @@ def add()-> None:
 
         goal_tasks.append(tasks[task_name])
 
-    new_goal= Goal(
+    new_goal= UmbrellaTask(
         name = name,
         id = id,
         description = desc,
@@ -95,7 +95,7 @@ def show():
 
 
     table1 = Table(
-            title="Goals",
+            title="UmbrellaTasks",
             #title_style="grey39",
             title_style="blue",
             header_style="#e85d04",
@@ -111,7 +111,7 @@ def show():
 
          # Load task 
     for _, details in goal.items():
-        goal_obj = Goal(**details)
+        goal_obj = UmbrellaTask(**details)
 
         table1.add_row(
                 goal_obj.name,
@@ -122,9 +122,3 @@ def show():
 
     left_print(table1)
     return
-
-
-
-
-
-

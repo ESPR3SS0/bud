@@ -36,7 +36,7 @@ class Task:
     start_date: str
 
 @dataclass 
-class Goal:
+class UmbrellaTask:
     name: str
     id: str
     description: str

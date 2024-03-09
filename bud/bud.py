@@ -12,31 +12,34 @@ import zoneinfo
 from rich.align import Align
 from rich.console import Console
 from rich.table import Table
+from rich.progress import Progress, BarColumn, TextColumn
 from typing_extensions import Annotated
 import typer
 
 from bud.bud_helpers import prompt_user, left_print, center_print
-from bud.bud_types import Task, Goal, Status, Priority
+from bud.bud_types import Task, Status, Priority, UmbrellaTask 
 
 
 from bud import task
 from bud import goal 
+from bud import clock
 
 import random
 
 # Need this to read toml, also in standard lib
 import tomllib 
 
-import datetime
+from datetime import datetime
 
 import polars as pl
 
 # Need this to write to toml
 import toml 
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_show_locals=False)
 app.add_typer(task.app, name="task")
 app.add_typer(goal.app, name = "goal")
+app.add_typer(clock.app, name = "clock")
 console = Console()
 
 PROJECT_CONFIG_DIR = Path(".bud")
@@ -141,7 +144,7 @@ def nocommand(context: typer.Context)->None:
     user_name = config['proj_info']['username']
 
     # This is a line from pleadse that prints hello and the time
-    date_text = f"[#FFBF00] Hello {user_name}! It's {datetime.datetime.now().strftime('%d %b | %I:%M %p')}[/]"
+    date_text = f"[#FFBF00] Hello {user_name}! It's {datetime.now().strftime('%d %b | %I:%M %p')}[/]"
     center_print(date_text)
 
     show()
@@ -178,7 +181,7 @@ def add(ctx: typer.Context,
         desc = ""
 
     status = Status.IDLE.name
-    start_date = str(datetime.datetime.now())
+    start_date = str(datetime.now())
     id = str(abs(hash(name))) # @TODO Am I happy with ID generation?
     #left_print("Priority(HIGH(EST)-MODERATE-LOW(EST)?")
     #priority = prompt_user("Priority?")
@@ -289,6 +292,7 @@ def scratch(pad_name:Annotated[str, typer.Option()])-> None:
 @app.command(short_help="List goals and tasks")
 def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> None:
     """
+    Display the list of things todo
     """
 
 
@@ -312,12 +316,13 @@ def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> No
             style="blue",
         )
 
+    table1.add_column("ID")
     table1.add_column("Task Name")
-    table1.add_column("Duration")
-    table1.add_column("Start Date")
-    table1.add_column("Status")
-    table1.add_column("Priority")
-    table1.add_column("Goal")
+    table1.add_column("Date Added")
+    table1.add_column("Days allocated")
+    table1.add_column("Days Left")
+    #table1.add_column("Progress")
+    table1.add_column("UmbrellaTask")
 
     # Need to be able to put down the goal that a task is apart of 
     # Need a list of goal and there tasks 
@@ -330,7 +335,7 @@ def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> No
     task_goal_dict = {}
 
     for _, cur_goal in goalList.items():
-        goal = Goal(**cur_goal)
+        goal = UmbrellaTask(**cur_goal)
         if goal.tasks != []:
             for cur_task in goal.tasks:
                 task = Task(**cur_task)
@@ -346,17 +351,48 @@ def show(verbose: Annotated[bool, typer.Option("--verbose", "-v")]= False )-> No
         if task_obj.name not in task_goal_dict.keys():
             task_goal_dict[task_obj.name] = []
 
+
+        time = task_obj.start_date.replace('.','DEL').split('DEL')[0]
+        start_datetime = datetime.strptime(time, '%Y-%m-%d %H:%M:%S')
+        start_date = str(start_datetime).split(' ')[0]
+
+        # Current datetime
+        current_datetime = datetime.now()
+        
+        # Calculate the difference
+        difference = current_datetime - start_datetime
+
+        #prog = create_progress_bar(difference.days, int(task_obj.duration))
+
         table1.add_row(
+                task_obj.id[::5],
                 task_obj.name,
+                start_date,
                 task_obj.duration,
-                task_obj.start_date,
-                task_obj.status,
-                task_obj.priority,
+                str(difference.days),
+                #task_obj.status,
+                #task_obj.priority,
                 " ".join(task_goal_dict[task_obj.name])
                 )
 
     left_print(table1)
     return
+
+def create_progress_bar(progress, total):
+    # Using Progress context manager to create a progress bar
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.percentage:>3.0f}%"),
+        console=console,
+        transient=True,  # Prevents display until explicitly printed
+    ) as progress_context:
+        task = progress_context.add_task("[green]Progress", total=total)
+        progress_context.update(task, advance=progress)
+        # Capture the progress bar rendering as a string
+        with console.capture() as capture:
+            progress_context.refresh()
+        return capture.get()
 
 #@app.command(short_help="Get quotes")
 #def quote():
@@ -404,110 +440,6 @@ def archive():
     with open(TASK_FILE,'w') as taskf:
         json.dump(raw_file, taskf)
 
-    return
-
-
-@app.command(short_help="Log time")
-def clock(
-        action: Annotated[str,typer.Argument(
-            help="Display if currently clocked in or out")] = None,
-        reset: Annotated[bool,typer.Option("-r", "--reset", 
-            help='Clear the most recent clock in and reset')] = False,
-        status: Annotated[bool,typer.Option("-s", "--status", 
-            help="Display if currently clocked in or out")] = False,
-        list: Annotated[bool,typer.Option( 
-            help="List the past 5 clocks")] = False,
-    ):
-    """Toggle a time clock
-
-    """
-
-    if action not in ["in", "out", None] :
-        print("Clock 'in' or clock 'out'")
-        return
-
-
-    # Schema was not working well when trying to read a csv
-    #schema = {
-    #    "date" : pl.Date,
-    #    "time" : pl.Time,
-    #    "datetime" : pl.Datetime,
-    #    "clock_in" : bool,
-    #    "clock_out" : bool
-    #}
-
-    # If the file doesn't exist create it 
-    if not TIME_FILE.exists():
-
-        time_df = pl.DataFrame({})#, schema=schema)
-    else:
-        time_df = pl.read_csv(TIME_FILE)
-
-    if reset:
-        print("In reset")
-        # Pop the most 
-
-        time_df = time_df.with_columns(pl.col('datetime').str.to_datetime("%Y-%m-%d %H:%M:%S%.f").alias("pdatetime"))
-        # Sort the DataFrame by the 'Date' column in descending order
-        time_df = time_df.sort('pdatetime', descending=True)
-        most_recent_time = time_df['pdatetime'][0]
-        print(f"Most recent time was: {most_recent_time}")
-
-        # Confirm with the user they want to remove the last clock
-        conf = input("Confirm remove(y/Y")
-        if conf in ['y', 'Y']:
-            time_df = time_df.filter(pl.col('pdatetime') != most_recent_time)
-
-
-    # Get the row with the most recent time
-    time_df = time_df.with_columns(pl.col('datetime').str.to_datetime("%Y-%m-%d %H:%M:%S%.f").alias("pdatetime"))
-    # Sort the DataFrame by the 'Date' column in descending order
-    latest_action = time_df.sort('pdatetime', descending=True)
-    was_clock_in = latest_action['clock_in'][0]
-
-    if action is not None:
-        if action == "in" and was_clock_in:
-            print("Do not double clock")
-            return
-        elif action == "out" and not was_clock_in:
-            print("Do not double clock")
-            return
-    else:
-        # Toggle the clock 
-        if was_clock_in:
-            action = 'out'
-        else:
-            action = 'in'
-
-    print(f"Clocking {action}")
-
-    # Drop the pdatetime clock
-    time_df = time_df.drop("pdatetime")
-
-    # Get the current time
-    current_time = datetime.datetime.utcnow()
-
-    # Get the times
-    data = {
-        "date" : str(current_time.date()),
-        "time" : str(current_time.time()),
-        "datetime" : str(current_time),
-        "clock_in" : True if action=="in" else False,
-        "clock_out" : True if action=="out" else False,
-    }
-
-    # Create the new dataframe
-    df2 = pl.DataFrame(data) #, schema=schema)
-
-    time_df = pl.concat([time_df, df2])
-
-
-    if list:
-        print("Previous 5 entries...")
-        print(time_df.tail(5))
-
-    # Write the to the time file
-    time_df.write_csv(TIME_FILE)
     return
 
 
