@@ -18,7 +18,6 @@ import typer
 from bud.bud_helpers import prompt_user, left_print, center_print
 from bud.bud_types import Task, Goal, Status, Priority
 
-#TODO:
 
 from bud import task
 from bud import goal 
@@ -460,47 +459,47 @@ def clock(
             time_df = time_df.filter(pl.col('pdatetime') != most_recent_time)
 
 
+    # Get the row with the most recent time
+    time_df = time_df.with_columns(pl.col('datetime').str.to_datetime("%Y-%m-%d %H:%M:%S%.f").alias("pdatetime"))
+    # Sort the DataFrame by the 'Date' column in descending order
+    latest_action = time_df.sort('pdatetime', descending=True)
+    was_clock_in = latest_action['clock_in'][0]
+
     if action is not None:
-
-
-        # Get the row with the most recent time
-        time_df = time_df.with_columns(pl.col('datetime').str.to_datetime("%Y-%m-%d %H:%M:%S%.f").alias("pdatetime"))
-        # Sort the DataFrame by the 'Date' column in descending order
-        latest_action = time_df.sort('pdatetime', descending=True)
-        was_clock_in = latest_action['clock_in'][0]
-
         if action == "in" and was_clock_in:
             print("Do not double clock")
             return
         elif action == "out" and not was_clock_in:
             print("Do not double clock")
             return
+    else:
+        # Toggle the clock 
+        if was_clock_in:
+            action = 'out'
+        else:
+            action = 'in'
 
-        time_df = time_df.drop("pdatetime")
-        
+    print(f"Clocking {action}")
 
+    # Drop the pdatetime clock
+    time_df = time_df.drop("pdatetime")
 
-        # Get the current time
-        current_time = datetime.datetime.utcnow()
+    # Get the current time
+    current_time = datetime.datetime.utcnow()
 
+    # Get the times
+    data = {
+        "date" : str(current_time.date()),
+        "time" : str(current_time.time()),
+        "datetime" : str(current_time),
+        "clock_in" : True if action=="in" else False,
+        "clock_out" : True if action=="out" else False,
+    }
 
-        # Get the times
-        data = {
-            "date" : str(current_time.date()),
-            "time" : str(current_time.time()),
-            "datetime" : str(current_time),
+    # Create the new dataframe
+    df2 = pl.DataFrame(data) #, schema=schema)
 
-                                    #pl.Datetime('us', 
-                                    # zoneinfo.ZoneInfo("UTC"),
-                                     #current_time),
-            "clock_in" : True if action=="in" else False,
-            "clock_out" : True if action=="out" else False,
-        }
-
-        # Create the new dataframe
-        df2 = pl.DataFrame(data) #, schema=schema)
-
-        time_df = pl.concat([time_df, df2])
+    time_df = pl.concat([time_df, df2])
 
 
     if list:
@@ -510,8 +509,6 @@ def clock(
     # Write the to the time file
     time_df.write_csv(TIME_FILE)
     return
-
-
 
 
 @app.command(short_help="Init new project")
